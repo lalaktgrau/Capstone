@@ -111,7 +111,7 @@ RUN;
 DATA CAP.CONSTANTS;
 SET CAP.HALT3;
 WHERE timepointid='B1' OR timepointid='SB1';   /*USING B1/SB1 AS BASELINE FOR DEMOGRAPHIC*/
-KEEP FGF PTH _25_OH_D _1_25_OH_D GENE1 AGE SEX RACEF3 RACE PKDAGE HPBAGE hght_cm WGHT_KG BMI BSA MARIT EMPL EDU;
+KEEP timepointid haltid FGF PTH _25_OH_D _1_25_OH_D GENE1 AGE SEX RACEF3 RACE PKDAGE HPBAGE hght_cm WGHT_KG BMI BSA MARIT EMPL EDU;
 RUN;
 
 /*PI SAID: Use the first and last time point for each participant to calculate change in eGFR and htTKV*/
@@ -140,6 +140,104 @@ VAR diastolic_avg;
 RUN;
 
 DATA CAP.CLEAN;
-MERGE /*PUT ALL TRANSPOSED DATA SETS HERE*/;
+MERGE WORK.HALT WORK.HALT1 WORK.HALT2 WORK.HALT3 CAP.CONSTANTS; /*PUT ALL TRANSPOSED DATA SETS HERE*/;
 BY HALTID;
 RUN;
+
+PROC SORT DATA=CAP.CLEAN;
+BY TIMEPOINTID;
+RUN;
+
+/*HOW DO I COMBINE B1 AND SB1?*/
+/*ASK INVESTIGATORS WHY THESE ARE DIFFERENT*/
+
+
+/*NEED TO FIGURE OUT WHY 21 OBSERVATIONS ARE BEING OMITTED FOR HAVING MISSING ID*/
+/*THERE MAY BE AN ERROR IN CODE ABOVE THAT IS CAUSING ERROR*/
+/*FIGURE OUT WHERE*/
+
+/*DATA CLEANING COMPLETE UP TO THIS POINT*/ 
+/*BEGINNING DESCRIPTIVES*/
+
+PROC CONTENTS DATA=CAP.CLEAN;
+RUN;
+
+/*FIGURE OUT WHICH VARIABLES I HAVE EXCLUDED*/
+
+/*HOW DO I CREATE OUTCOME VARIABLE?*/
+
+
+/*CONTINUOUS VARIABLES*/
+PROC MEANS data=CAP.CLEAN n nmiss min mean median max std;
+	VAR egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 egfrF54 
+		egfrSB1 egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 egfrF96 
+		httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 httkvF5 
+		httkvF54 httkvSB1 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 httkvF84 
+		httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 sysavgF42 
+		sysavgF48 sysavgF5 sysavgF54 sysavgSB1 sysavgB1 sysavgF72 sysavgF60 sysavgF66 
+		sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 diasavgF24 
+		diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 diasavgSB1 
+		diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 diasavgF90 
+		diasavgF96 FGF PTH age pkdage hpbage hght_cm wght_kg bmi bsa 
+		 _1_25_OH_D _25_OH_D ;
+RUN;
+
+/*CONSIDER RECATEGORIZING VARIABLES TO HAVE LARGER GROUPS*/
+/*RECODE SEX TO BE 0 AND 1*/
+DATA CAP.CLEAN;
+SET CAP.CLEAN;
+IF SEX=1 THEN SEX=0;
+ELSE IF SEX=2 THEN SEX=1;
+RUN;
+
+/*CATEGORICAL VARIABLES*/
+PROC FREQ DATA=CAP.CLEAN;
+TABLES GENE1 sex racef3 race marit empl edu;
+RUN;
+
+/*HOW ARE DEMOGRAPHICS DISTRIBUTED BY GENOTYPE?*/
+PROC FREQ DATA=CAP.CLEAN;
+TABLES sex*GENE1 racef3*GENE1 race*GENE1 marit*GENE1 empl*GENE1 edu*GENE1;
+RUN;
+
+/*HOW DO CONTINUOUS VARIABLES DIFFER BY GENOTYPE?*/
+PROC SORT DATA=CAP.CLEAN;
+BY GENE1;
+RUN;
+PROC MEANS data=CAP.CLEAN n nmiss min mean median max std;
+	VAR egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 egfrF54 
+		egfrSB1 egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 egfrF96 
+		httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 httkvF5 
+		httkvF54 httkvSB1 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 httkvF84 
+		httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 sysavgF42 
+		sysavgF48 sysavgF5 sysavgF54 sysavgSB1 sysavgB1 sysavgF72 sysavgF60 sysavgF66 
+		sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 diasavgF24 
+		diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 diasavgSB1 
+		diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 diasavgF90 
+		diasavgF96 FGF PTH age pkdage hpbage hght_cm wght_kg bmi bsa 
+		 _1_25_OH_D _25_OH_D ;
+		 BY GENE1;
+RUN;
+
+/*MISSING DATA ANALYSIS*/
+DATA CAP.MISSING;
+SET CAP.CLEAN;
+IF GENE1='.' 	THEN 	GENEMISS=1;
+ELSE 					GENEMISS=0;
+IF SEX='.'		THEN 	SEXMISS=1;
+ELSE					SEXMISS=0;
+IF RACEF3='.' 	THEN	RACEFMISS=1;
+ELSE					RACEFMISS=0;
+IF RACE='.'		THEN 	RACEMISS=1;
+ELSE					RACEMISS=0;
+IF MARIT='.'	THEN	MARITMISS=1;
+ELSE 					MARITMISS=0;
+IF EMPL='.'		THEN	EMPLMISS=1;
+ELSE 					EMPLMISS=0;
+IF EDU='.' 		THEN 	EDUMISS=1;
+ELSE 					EDUMISS=0;
+RUN;
+
+
+
+
