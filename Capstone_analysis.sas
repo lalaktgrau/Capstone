@@ -3,7 +3,7 @@
 *                                                                                       *
 *   PROJECT:    CAPSTONE                                                                *
 *   AUTHOR:     LAURA GRAU 	                                                            *
-*   CREATED:    2017-09-24                                                              *
+*   CREATED:    2017-11-07                                                              *
 *                                                                                       *
 *   DATA USED:  HALTPKD                                                      			*
 *   SOFTWARE:   SAS (r) Proprietary Software 9.4 (TS1M4)                                *                                                   
