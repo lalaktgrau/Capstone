@@ -92,6 +92,7 @@ IF GENE="NMD"	  								    THEN GENE1=4;
 IF GENE=" "											THEN GENE1=" ";
 RUN;
 
+	
 DATA CAP.HALT3;
 SET CAP.HALT3;
 DROP VAR7 box row column vial_ID alternate barcode Pittsburgh_Family_ID;

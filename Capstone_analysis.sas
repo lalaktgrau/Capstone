@@ -22,6 +22,26 @@ Decline in eGFR= genotype + FGF23 + Mineral Metabolites+interactions+ Demographi
 % increase in htTKV= genotype + FGF23 + Mineral Metabolites+interactions+ Demographics
 */
 
+
+
+PROC ANOVA DATA=CAP.CLEAN;
+CLASS GENE1;
+MODEL LFGF=GENE1;
+MEANS GENE1;
+RUN;
+
+PROC ANOVA DATA=CAP.CLEAN;
+CLASS GENE1;
+MODEL _25_OH_D=GENE1;
+MEANS GENE1;
+RUN;
+
+PROC ANOVA DATA=CAP.CLEAN;
+CLASS GENE1;
+MODEL _1_25_OH_D=GENE1;
+MEANS GENE1;
+RUN;
+
 PROC GLM DATA=CAP.CLEAN;
 MODEL LFGF=GENE1/SOLUTION;
 LSMEANS;
