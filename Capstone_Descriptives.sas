@@ -150,26 +150,23 @@ RUN;
 
 /*HOW DO I COMBINE B1 AND SB1?*/
 /*ASK INVESTIGATORS WHY THESE ARE DIFFERENT*/
-
-
-/*NEED TO FIGURE OUT WHY 21 OBSERVATIONS ARE BEING OMITTED FOR HAVING MISSING ID*/
-/*THERE MAY BE AN ERROR IN CODE ABOVE THAT IS CAUSING ERROR*/
-/*FIGURE OUT WHERE*/
-
-/*DATA CLEANING COMPLETE UP TO THIS POINT*/ 
-/*BEGINNING DESCRIPTIVES*/
-
-PROC CONTENTS DATA=CAP.CLEAN;
-RUN;
-
-/*FIGURE OUT WHICH VARIABLES I HAVE EXCLUDED*/
-
 /*HOW DO I CREATE OUTCOME VARIABLE?*/
+/*NEED TO CALCULATE % CHANGE IN HTTKV & EGFR FROM BASELINE TO LAST FOLLOW UP*/
+/*NEED TO FIGURE OUT WHY 21 OBSERVATIONS ARE BEING OMITTED FOR HAVING MISSING ID*/
 
+/*BEGINNING DESCRIPTIVES*/
+/*** Analyze categorical variables ***/
+title "Frequencies for Categorical Variables";
 
-/*CONTINUOUS VARIABLES*/
-PROC MEANS data=CAP.CLEAN n nmiss min mean median max std;
-	VAR egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 egfrF54 
+proc freq data=CAP.CLEAN;
+	tables timepointid / plots=(freqplot);
+run;
+
+/*** Analyze numeric variables ***/
+title "Descriptive Statistics for Numeric Variables";
+
+proc means data=CAP.CLEAN n nmiss min mean median max std;
+	var egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 egfrF54 
 		egfrSB1 egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 egfrF96 
 		httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 httkvF5 
 		httkvF54 httkvSB1 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 httkvF84 
@@ -178,8 +175,34 @@ PROC MEANS data=CAP.CLEAN n nmiss min mean median max std;
 		sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 diasavgF24 
 		diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 diasavgSB1 
 		diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 diasavgF90 
-		diasavgF96 FGF PTH age pkdage hpbage hght_cm wght_kg bmi bsa 
-		 _1_25_OH_D _25_OH_D ;
+		diasavgF96 FGF PTH age sex racef3 race pkdage hpbage hght_cm wght_kg bmi bsa 
+		marit empl edu _1_25_OH_D _25_OH_D GENE1;
+run;
+
+title;
+
+proc univariate data=CAP.CLEAN noprint;
+	histogram egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 
+		egfrF54 egfrSB1 egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 
+		egfrF96 httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 
+		httkvF5 httkvF54 httkvSB1 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 
+		httkvF84 httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 
+		sysavgF42 sysavgF48 sysavgF5 sysavgF54 sysavgSB1 sysavgB1 sysavgF72 sysavgF60 
+		sysavgF66 sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 
+		diasavgF24 diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 
+		diasavgSB1 diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 
+		diasavgF90 diasavgF96 FGF PTH age sex racef3 race pkdage hpbage hght_cm 
+		wght_kg bmi bsa marit empl edu _1_25_OH_D _25_OH_D GENE1;
+run;
+
+/*BASED ON DISTRIBUTION OF FGF, I LOG TRANSFORMED*/
+DATA CAP.CLEAN;
+SET CAP.CLEAN;
+LFGF=LOG(FGF);
+RUN;
+
+PROC SGPLOT DATA=CAP.CLEAN;
+HISTOGRAM LFGF;
 RUN;
 
 /*CONSIDER RECATEGORIZING VARIABLES TO HAVE LARGER GROUPS*/
@@ -237,6 +260,12 @@ ELSE 					EMPLMISS=0;
 IF EDU='.' 		THEN 	EDUMISS=1;
 ELSE 					EDUMISS=0;
 RUN;
+
+PROC FREQ DATA=CAP.MISSING;
+TABLES GENEMISS SEXMISS RACEFMISS RACEMISS MARITMISS EMPLMISS EDUMISS;
+RUN;
+
+
 
 
 
