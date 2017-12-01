@@ -113,7 +113,71 @@ PROC SORT DATA=CAP.HALT3;
 BY HALTID timepointid;
 run;
 
-PROC CONTENTS DATA=CAP.HALT3;
+/*RECODE SEX TO BE 0 AND 1*/
+DATA CAP.HALT3;
+SET CAP.HALT3;
+IF SEX=1 THEN SEX=0;
+ELSE IF SEX=2 THEN SEX=1;
+LFGF=LOG(FGF);
+lhttkv=LOG(HTTKV);
+RUN;
+
+PROC UNIVARIATE DATA=CAP.HALT3;
+HISTOGRAM LFGF;
+RUN;
+/*CREATING CHANGE OUTCOMES*/
+/*EGFR*/
+PROC SORT DATA=CAP.HALT3 OUT=WORK.CHANGE SORTSEQ=LINGUISTIC (NUMERIC_COLLATION=ON);
+BY HALTID TIMEPOINTID;
+RUN;
+
+DATA WORK.CHANGEEGFR;
+SET WORK.CHANGE;
+IF CKD_EPI_EGFR='.' THEN DELETE;
+RUN;
+
+DATA WORK.CHANGEEGFR;
+SET WORK.CHANGEEGFR;
+BY HALTID;
+IF FIRST.HALTID THEN OUTPUT;
+IF LAST.HALTID THEN OUTPUT;
+RUN;
+
+DATA WORK.CHANGEEGFR;
+SET WORK.CHANGEEGFR;
+   PCTEGFR = dif( CKD_EPI_EGFR ) / lag( CKD_EPI_EGFR ) * 100;
+   RUN;
+   
+   
+DATA WORK.CHANGEEGFR;
+SET WORK.CHANGEEGFR;
+BY HALTID;
+IF FIRST.HALTID THEN DELETE;
+RUN;
+
+/*HTTKV*/
+
+DATA WORK.CHANGETKV;
+SET WORK.CHANGE;
+IF HTTKV='.' THEN DELETE;
+RUN;
+
+DATA WORK.CHANGETKV;
+SET WORK.CHANGETKV;
+BY HALTID;
+IF FIRST.HALTID THEN OUTPUT;
+IF LAST.HALTID THEN OUTPUT;
+RUN;
+
+DATA WORK.CHANGETKV;
+SET WORK.CHANGETKV;
+   PCTLTKV = dif(LHTTKV) / lag(LHTTKV) * 100;
+   RUN; 
+   
+DATA WORK.CHANGETKV;
+SET WORK.CHANGETKV;
+BY HALTID;
+IF FIRST.HALTID THEN DELETE;
 RUN;
 
 /*NEED TO TRANSPOSE THE DATA*/
@@ -151,8 +215,9 @@ ID timepointid;
 VAR diastolic_avg;
 RUN;
 
+/*MERGING TRANSPOSED DATA & CHANGE OUTCOMES*/
 DATA CAP.transposed;
-MERGE WORK.HALT WORK.HALT1 WORK.HALT2 WORK.HALT3 CAP.CONSTANTS; /*PUT ALL TRANSPOSED DATA SETS HERE*/;
+MERGE WORK.HALT WORK.HALT1 WORK.HALT2 WORK.HALT3 CAP.CONSTANTS WORK.CHANGETKV  WORK.CHANGEEGFR; /*PUT ALL TRANSPOSED DATA SETS HERE*/;
 BY HALTID;
 RUN;
 
@@ -161,97 +226,8 @@ BY TIMEPOINTID;
 RUN;
 
 
-/*HOW DO I CREATE OUTCOME VARIABLE?*/
-/*NEED TO CALCULATE % CHANGE IN HTTKV & EGFR FROM BASELINE TO LAST FOLLOW UP*/
-/*NEED TO FIGURE OUT WHY 21 OBSERVATIONS ARE BEING OMITTED FOR HAVING MISSING ID*/
 
-/*BEGINNING DESCRIPTIVES*/
-/*** Analyze categorical variables ***/
-title "Frequencies for Categorical Variables";
 
-proc freq data=CAP.transposed;
-	tables timepointid / plots=(freqplot);
-run;
-
-/*** Analyze numeric variables ***/
-title "Descriptive Statistics for Numeric Variables";
-
-proc means data=CAP.CLEAN n nmiss min mean median max std;
-	var egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 egfrF54 
-		egfrSB1 egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 egfrF96 
-		httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 httkvF5 
-		httkvF54 httkvSB1 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 httkvF84 
-		httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 sysavgF42 
-		sysavgF48 sysavgF5 sysavgF54 sysavgSB1 sysavgB1 sysavgF72 sysavgF60 sysavgF66 
-		sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 diasavgF24 
-		diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 diasavgSB1 
-		diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 diasavgF90 
-		diasavgF96 FGF PTH age sex racef3 race pkdage hpbage hght_cm wght_kg bmi bsa 
-		marit empl edu _1_25_OH_D _25_OH_D GENE1;
-run;
-
-title;
-
-proc univariate data=CAP.transposed noprint;
-	histogram egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 
-		egfrF54  egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 
-		egfrF96 httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 
-		httkvF5 httkvF54 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 
-		httkvF84 httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 
-		sysavgF42 sysavgF48 sysavgF5 sysavgF54  sysavgB1 sysavgF72 sysavgF60 
-		sysavgF66 sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 
-		diasavgF24 diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 
-		 diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 
-		diasavgF90 diasavgF96 FGF PTH age sex racef3 race pkdage hpbage hght_cm 
-		wght_kg bmi bsa marit empl edu _1_25_OH_D _25_OH_D GENE1;
-run;
-
-/*BASED ON DISTRIBUTION OF FGF, I LOG TRANSFORMED*/
-DATA CAP.HALT3;
-SET CAP.HALT3;
-LFGF=LOG(FGF);
-RUN;
-
-PROC SGPLOT DATA=CAP.HALT3;
-HISTOGRAM LFGF;
-RUN;
-
-/*CONSIDER RECATEGORIZING VARIABLES TO HAVE LARGER GROUPS*/
-/*RECODE SEX TO BE 0 AND 1*/
-DATA CAP.HALT3;
-SET CAP.HALT3;
-IF SEX=1 THEN SEX=0;
-ELSE IF SEX=2 THEN SEX=1;
-RUN;
-
-/*CATEGORICAL VARIABLES*/
-PROC FREQ DATA=CAP.transposed;
-TABLES GENE1 sex racef3 race marit empl edu;
-RUN;
-
-/*HOW ARE DEMOGRAPHICS DISTRIBUTED BY GENOTYPE?*/
-PROC FREQ DATA=CAP.transposed;
-TABLES sex*GENE1 racef3*GENE1 race*GENE1 marit*GENE1 empl*GENE1 edu*GENE1;
-RUN;
-
-/*HOW DO CONTINUOUS VARIABLES DIFFER BY GENOTYPE?*/
-PROC SORT DATA=CAP.transposed;
-BY GENE1;
-RUN;
-PROC MEANS data=CAP.transposed n nmiss min mean median max std;
-	VAR egfrF12 egfrF18 egfrF24 egfrF30 egfrF36 egfrF42 egfrF48 egfrF5 
-		egfrF54  egfrB1 egfrF72 egfrF60 egfrF66 egfrF78 egfrF84 egfrF90 
-		egfrF96 httkvF12 httkvF18 httkvF24 httkvF30 httkvF36 httkvF42 httkvF48 
-		httkvF5 httkvF54 httkvB1 httkvF72 httkvF60 httkvF66 httkvF78 
-		httkvF84 httkvF90 httkvF96 sysavgF12 sysavgF18 sysavgF24 sysavgF30 sysavgF36 
-		sysavgF42 sysavgF48 sysavgF5 sysavgF54  sysavgB1 sysavgF72 sysavgF60 
-		sysavgF66 sysavgF78 sysavgF84 sysavgF90 sysavgF96 diasavgF12 diasavgF18 
-		diasavgF24 diasavgF30 diasavgF36 diasavgF42 diasavgF48 diasavgF5 diasavgF54 
-		 diasavgB1 diasavgF72 diasavgF60 diasavgF66 diasavgF78 diasavgF84 
-		diasavgF90 diasavgF96 FGF PTH age sex racef3 race pkdage hpbage hght_cm 
-		wght_kg bmi bsa marit empl edu _1_25_OH_D _25_OH_D ;
-		 BY GENE1;
-RUN;
 
 
 
